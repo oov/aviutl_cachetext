@@ -6,7 +6,7 @@ mkdir -p bin/script
 sed 's/\r$//' README.md | sed 's/$/\r/' > bin/キャッシュテキスト.txt
 
 # update version string
-VERSION='v0.1'
+VERSION='v0.2'
 GITHASH=`git rev-parse --short HEAD`
 cat << EOS | sed 's/\r$//' | sed 's/$/\r/' > 'src/ver.lua'
 -- CacheText $VERSION ( $GITHASH ) by oov
