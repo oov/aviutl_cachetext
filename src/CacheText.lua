@@ -3,90 +3,158 @@ local Extram = require('Extram')
 
 P.caches = {}
 
+P.creating = false
+P.beforekey = nil
 P.key = nil
-P.c = nil
 P.msg = nil
 
--- message: ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸æœ¬æ–‡
--- mode: å‹•ä½œãƒ¢ãƒ¼ãƒ‰ 0 = å¸¸ã«æœ€æ–°ãƒ‡ãƒ¼ã‚¿ã‚’ä½¿ã† / 1 = ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‚’ä½¿ã†
+function P.del(key)
+  if P.caches[key] ~= nil then
+    for i = 0, P.caches[key].num do
+      Extram.del(key .. "-" .. i)
+    end
+  end
+  P.caches[key] = nil
+end
+
+-- message: ƒƒbƒZ[ƒW–{•¶
+-- mode: “®ìƒ‚[ƒh 0 = í‚ÉÅVƒf[ƒ^‚ğg‚¤ / 1 = ƒLƒƒƒbƒVƒ…‚ğg‚¤
 function P.mes(message, mode)
-  P.msg = message:gsub("([\128-\160\224-\255]\092)\092","%1")
+  P.gc()
+
+  P.beforekey = nil
   P.key = "CacheText:" .. obj.layer
-  if mode == 0 then
-    Extram.del(P.key)
-    P.caches[P.key] = nil
+  P.msg = message:gsub("([\128-\160\224-\255]\092)\092","%1")
+  local c = P.caches[P.key]
+  if (c ~= nil and c.msg ~= P.msg)or(mode == 0) then
+    -- ƒeƒLƒXƒg“à—e‚ª•Ï‚í‚Á‚½‚©AƒLƒƒƒbƒVƒ…–³Œøƒ‚[ƒh‚È‚çƒLƒƒƒbƒVƒ…‚ğ”jŠü
+    P.del(P.key)
+    c = nil
   end
-  P.c = P.caches[P.key]
-  if P.c ~= nil and P.c.msg ~= P.msg then
-    P.caches[P.key] = nil
-    P.c = nil
-  end
-  if P.c == nil then
+  if c == nil then
     mes(P.msg)
+    P.creating = true
   else
-    mes("<s1,Arial> ")
+    mes("<s1,Arial>" .. string.rep(".", c.num))
+    P.creating = false
   end
 end
 
 function P.after()
-  if P.key == nil then
-    -- å‘¼ã³å‡ºã—ãŒãªã‚“ã‹ãŠã‹ã—ã‹ã£ãŸ
+  if P.key ~= nil then
+    if P.creating then
+      P.store(P.key)
+    else
+      P.load(P.key)
+    end
+    P.beforekey = P.key
+    P.key = nil
     return
   end
-  if P.c == nil then
-    -- ãƒ†ã‚­ã‚¹ãƒˆã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆã§æç”»ã•ã‚ŒãŸã®ã§ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã«ä¿å­˜ã™ã‚‹
-    if obj.w ~= 0 and obj.h ~= 0 then
-      local data, w, h = obj.getpixeldata()
-      Extram.put(P.key, data, w * 4 * h)
-      P.caches[P.key] = {
-        t = os.clock(),
-        w = w,
-        h = h,
-        cx = obj.cx,
-        cy = obj.cy,
-        msg = P.msg,
-      }
+  if P.beforekey ~= nil and obj.index > 0 then
+    if P.creating then
+      P.store(P.beforekey)
+    else
+      P.load(P.beforekey)
     end
-  else
-    -- æç”»ã•ã‚Œãªã‹ã£ãŸã®ã§ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‹ã‚‰è¡¨ç¤º
-    obj.setoption("drawtarget", "tempbuffer", P.c.w, P.c.h)
-    obj.load("tempbuffer")
-    local data, w, h = obj.getpixeldata()
-    if not pcall(Extram.get, P.key, data, w * 4 * h) then
-      -- ã‚­ãƒ£ãƒƒã‚·ãƒ¥ã‹ã‚‰ã®èª­ã¿è¾¼ã¿ã«å¤±æ•—ã—ãŸå ´åˆã¯è«¦ã‚ã‚‹ï¼ˆæ‰‹å‹•ã§æ¶ˆã•ã‚ŒãŸå ´åˆãªã©ï¼‰
-      P.caches[P.key] = nil
-      P.c = nil
-      P.key = nil
-      return
-    end
-    obj.putpixeldata(data)
-    obj.cx = P.c.cx
-    obj.cy = P.c.cy
-    P.c.t = os.clock()
-    P.caches[P.key] = P.c
+    return
   end
-
-  P.key = nil
-  P.c = nil
-
-  -- ä¸è¦ãªãƒ‡ãƒ¼ã‚¿ã®æƒé™¤
-  P.gc()
 end
 
-P.lifetime = 3 -- ç§’
-P.gcinterval = 10 -- ç§’
+function P.store(key)
+  -- ƒLƒƒƒbƒVƒ…ì¬
+  local w, h = 0, 0;
+  if obj.w ~= 0 or obj.h ~= 0 then
+    -- ‰æ‘œƒf[ƒ^‚ª‚ ‚è‚»‚¤‚È‚çƒLƒƒƒbƒVƒ…‚É‘‚«‚Ş
+    local data;
+    data, w, h = obj.getpixeldata()
+    Extram.put(key .. "-" .. obj.index, data, w * 4 * h)
+  end
+  local c = P.caches[key]
+  if obj.index == 0 then
+    c = {
+      t = os.clock(),
+      msg = P.msg,
+      num = obj.num,
+      img = {},
+    }
+  end
+  c.img[obj.index] = {
+    w = w,
+    h = h,
+    ox = obj.ox,
+    oy = obj.oy,
+    oz = obj.oz,
+    rx = obj.rx,
+    ry = obj.ry,
+    rz = obj.rz,
+    cx = obj.cx,
+    cy = obj.cy,
+    cz = obj.cz,
+    zoom = obj.zoom,
+    alpha = obj.alpha,
+    aspect = obj.aspect,
+  }
+  P.caches[key] = c
+end
+
+function P.load(key)
+  local c = P.caches[key]
+  if c ~= nil and c.num ~= obj.num then
+    -- ƒLƒƒƒbƒVƒ…—LŒø‚Éu•¶š–ˆ‚ÉŒÂ•ÊƒIƒuƒWƒFƒNƒgv‚Ìƒ`ƒFƒbƒN‚ªØ‚è‘Ö‚¦‚ç‚ê‚½
+    -- ‰æ‘œ‚Ì–‡”‚ª•Ï‚í‚é‚ª¡‰ñ‚ÍƒeƒLƒXƒg‚ª•`‰æ‚³‚ê‚Ä‚¢‚È‚¢‚Ì‚Å’ú‚ß‚é‚µ‚©‚È‚¢
+    P.del(key)
+    P.beforekey = nil
+    P.key = nil
+    return
+  end
+  if c == nil then
+    error("invalid internal state")
+  end
+  if obj.index == 0 then
+    c.t = os.clock()
+    P.caches[key] = c
+  end
+  local cimg = c.img[obj.index]
+  if cimg.w == 0 or cimg.h == 0 then
+    -- •`‰æ‚·‚é•K—v‚ª‚È‚³‚»‚¤
+    return
+  end
+  obj.setoption("drawtarget", "tempbuffer", cimg.w, cimg.h)
+  obj.load("tempbuffer")
+  local data, w, h = obj.getpixeldata()
+  if not pcall(Extram.get, key .. "-" .. obj.index, data, w * 4 * h) then
+    -- ƒLƒƒƒbƒVƒ…‚©‚ç‚Ì“Ç‚İ‚İ‚É¸”s‚µ‚½ê‡‚Í’ú‚ß‚éiè“®‚ÅÁ‚³‚ê‚½ê‡‚È‚Çj
+    return
+  end
+  obj.putpixeldata(data)
+  obj.ox = cimg.ox
+  obj.oy = cimg.oy
+  obj.oz = cimg.oz
+  obj.rx = cimg.rx
+  obj.ry = cimg.ry
+  obj.rz = cimg.rz
+  obj.cx = cimg.cx
+  obj.cy = cimg.cy
+  obj.cz = cimg.cz
+  obj.zoom = cimg.zoom
+  obj.alpha = cimg.alpha
+  obj.aspect = cimg.aspect
+end
+
+P.lifetime = 3 -- •b
+P.gcinterval = 10 -- •b
 P.lastgc = 0
 function P.gc()
   local t = os.clock()
   if P.lastgc + P.gcinterval >= t then
-    -- ã¾ã ã‚ã‚“ã¾ã‚Šæ™‚é–“ãŒçµŒã£ã¦ãªã„
+    -- ‚Ü‚¾‚ ‚ñ‚Ü‚èŠÔ‚ªŒo‚Á‚Ä‚È‚¢
     return
   end
   for key, c in pairs(P.caches) do
     if c.t + P.lifetime < t then
-      -- æœ€è¿‘ä½¿ã‚ã‚Œã¦ã„ãªã„ã®ã§å‰Šé™¤
-      Extram.del(key)
-      P.caches[key] = nil
+      -- Å‹ßg‚í‚ê‚Ä‚¢‚È‚¢‚Ì‚Åíœ
+      P.del(key)
     end
   end
   P.lastgc = os.clock()
