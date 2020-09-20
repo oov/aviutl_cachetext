@@ -1,3 +1,4 @@
+-- CacheText $VERSION$ ( $GITHASH$ ) by oov
 local P = {}
 local Extram = require('Extram')
 

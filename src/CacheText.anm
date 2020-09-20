@@ -1,1 +1,2 @@
+-- CacheText $VERSION$ ( $GITHASH$ ) by oov
 require("CacheText").after()
