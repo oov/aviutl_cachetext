@@ -64,10 +64,10 @@ end
 
 function P.store(key)
   -- キャッシュ作成
-  local w, h = 0, 0;
-  if obj.w ~= 0 or obj.h ~= 0 then
+  local w, h = 0, 0
+  if obj.w ~= 0 and obj.h ~= 0 then
     -- 画像データがありそうならキャッシュに書き込む
-    local data;
+    local data
     data, w, h = obj.getpixeldata()
     Extram.put(key .. "-" .. obj.index, data, w * 4 * h)
   end
