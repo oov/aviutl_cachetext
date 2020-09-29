@@ -10,6 +10,8 @@ $VERSION$ ( $GITHASH$ ) by oov
 
 静的なテキストを表示する際の軽量化にお使いください。
 
+ダウンロードは [Releases](https://github.com/oov/aviutl_cachetext/releases) の Assets から、更新履歴は [CHANGELOG.md](https://github.com/oov/aviutl_cachetext/blob/master/CHANGELOG.md) を参照してください。
+
 動作環境
 --------
 
