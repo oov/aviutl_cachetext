@@ -21,11 +21,17 @@ end
 -- message: メッセージ本文
 -- mode: 動作モード 0 = 常に最新データを使う / 1 = キャッシュを使う
 function P.mes(message, mode)
+  -- 拡張編集の GUI 上で入力されたテキストは Shift_JIS の駄目文字への対策が行われるが、
+  -- そもそも文字列をダブルクォートで括っていない場合にはゴミになるので除去しておく
+  return P.rawmes(message:gsub("([\128-\160\224-\255]\092)\092","%1"), mode)
+end
+
+function P.rawmes(message, mode)
   P.gc()
 
   P.beforekey = nil
   P.key = "CacheText:" .. obj.layer
-  P.msg = message:gsub("([\128-\160\224-\255]\092)\092","%1")
+  P.msg = message
   local c = P.caches[P.key]
   if (c ~= nil and c.msg ~= P.msg)or(mode == 0) then
     -- テキスト内容が変わったか、キャッシュ無効モードならキャッシュを破棄
