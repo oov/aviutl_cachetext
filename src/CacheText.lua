@@ -33,7 +33,8 @@ function P.rawmes(message, mode)
   P.key = "CacheText:" .. obj.layer
   P.msg = message
   local c = P.caches[P.key]
-  if (c ~= nil and c.msg ~= P.msg)or(mode == 0) then
+  if (c ~= nil and (c.frame == obj.frame or c.msg ~= P.msg)) or (mode == 0) then
+    -- カーソル位置が変わらずに再描画された（サイズを変更した場合など）か、
     -- テキスト内容が変わったか、キャッシュ無効モードならキャッシュを破棄
     P.del(P.key)
     c = nil
@@ -81,6 +82,7 @@ function P.store(key)
   if obj.index == 0 then
     c = {
       t = os.clock(),
+      frame = obj.frame,
       d = 0,
       msg = P.msg,
       num = obj.num,
@@ -121,6 +123,7 @@ function P.load(key)
   end
   if obj.index == 0 then
     c.t = os.clock()
+    c.frame = obj.frame
     c.d = 0
   end
   local cimg = c.img[obj.index]
