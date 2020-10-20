@@ -81,6 +81,7 @@ function P.store(key)
   if obj.index == 0 then
     c = {
       t = os.clock(),
+      d = 0,
       msg = P.msg,
       num = obj.num,
       img = {},
@@ -120,7 +121,7 @@ function P.load(key)
   end
   if obj.index == 0 then
     c.t = os.clock()
-    P.caches[key] = c
+    c.d = 0
   end
   local cimg = c.img[obj.index]
   if cimg.w == 0 or cimg.h == 0 then
@@ -160,8 +161,12 @@ function P.gc()
   end
   for key, c in pairs(P.caches) do
     if c.t + P.lifetime < t then
-      -- 最近使われていないので削除
-      P.del(key)
+      -- 最近使われていないデータを発見
+      if c.d == 0 then
+        c.d = 1 -- 削除対象としてマーク
+      else
+        P.del(key) -- 実際に削除
+      end
     end
   end
   P.lastgc = os.clock()
