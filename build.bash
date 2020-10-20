@@ -3,7 +3,7 @@
 mkdir -p bin/script
 
 # update version string
-VERSION='v0.4'
+VERSION='v0.5'
 GITHASH=`git rev-parse --short HEAD`
 
 # copy readme
