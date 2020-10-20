@@ -133,6 +133,10 @@ function P.load(key)
   local data, w, h = obj.getpixeldata()
   if not pcall(Extram.get, key .. "-" .. obj.index, data, w * 4 * h) then
     -- キャッシュからの読み込みに失敗した場合は諦める（手動で消された場合など）
+    -- データに不整合が起きているので一旦すべて仕切り直す
+    P.del(key)
+    P.beforekey = nil
+    P.key = nil
     return
   end
   obj.putpixeldata(data)
