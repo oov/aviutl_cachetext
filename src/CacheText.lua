@@ -18,8 +18,11 @@ function P.del(key)
   P.caches[key] = nil
 end
 
--- message: メッセージ本文
--- mode: 動作モード 0 = 常に最新データを使う / 1 = キャッシュを使う
+-- @param message メッセージ本文
+-- @param mode 動作モード
+--             -1 = 常に最新データを使う
+--              0 = オブジェクト編集中以外はキャッシュを使う
+--              1 = 常にキャッシュを使う
 function P.mes(message, mode)
   -- 拡張編集の GUI 上で入力されたテキストは Shift_JIS の駄目文字への対策が行われるが、
   -- そもそも文字列をダブルクォートで括っていない場合にはゴミになるので除去しておく
@@ -33,8 +36,9 @@ function P.rawmes(message, mode)
   P.key = "CacheText:" .. obj.layer
   P.msg = message
   local c = P.caches[P.key]
-  if (c ~= nil and (c.frame == obj.frame or c.msg ~= P.msg)) or (mode == 0) then
-    -- カーソル位置が変わらずに再描画された（サイズを変更した場合など）か、
+  if c ~= nil and (mode == 0 and c.frame == obj.frame and obj.getoption("gui") or c.msg ~= P.msg)
+  or mode == -1 then
+    -- 編集中カーソル移動せずに再描画された（サイズを変更した場合など）か、
     -- テキスト内容が変わったか、キャッシュ無効モードならキャッシュを破棄
     P.del(P.key)
     c = nil
