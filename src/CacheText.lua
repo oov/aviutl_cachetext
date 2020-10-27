@@ -75,15 +75,8 @@ end
 
 function P.store(key)
   -- キャッシュ作成
-  local w, h = 0, 0
-  if obj.w ~= 0 and obj.h ~= 0 then
-    -- 画像データがありそうならキャッシュに書き込む
-    local data
-    data, w, h = obj.getpixeldata()
-    Extram.put(key .. "-" .. obj.index, data, w * 4 * h)
-  end
   local c = P.caches[key]
-  if obj.index == 0 then
+  if c == nil then
     c = {
       t = os.clock(),
       frame = obj.frame,
@@ -92,7 +85,14 @@ function P.store(key)
       num = obj.num,
       img = {},
     }
+    P.caches[key] = c
   end
+  if obj.w == 0 or obj.h == 0 then
+    return
+  end
+  -- 画像データがありそうならキャッシュに書き込む
+  local data, w, h = obj.getpixeldata()
+  Extram.put(key .. "-" .. obj.index, data, w * 4 * h)
   c.img[obj.index] = {
     w = w,
     h = h,
@@ -109,12 +109,14 @@ function P.store(key)
     alpha = obj.alpha,
     aspect = obj.aspect,
   }
-  P.caches[key] = c
 end
 
 function P.load(key)
   local c = P.caches[key]
-  if c ~= nil and c.num ~= obj.num then
+  if c == nil then
+    error("invalid internal state")
+  end
+  if c.num ~= obj.num then
     -- キャッシュ有効時に「文字毎に個別オブジェクト」のチェックが切り替えられた
     -- 画像の枚数が変わるが今回はテキストが描画されていないので諦めるしかない
     P.del(key)
@@ -122,16 +124,13 @@ function P.load(key)
     P.key = nil
     return
   end
-  if c == nil then
-    error("invalid internal state")
-  end
   if obj.index == 0 then
     c.t = os.clock()
     c.frame = obj.frame
     c.d = 0
   end
   local cimg = c.img[obj.index]
-  if cimg.w == 0 or cimg.h == 0 then
+  if cimg == nil then
     -- 描画する必要がなさそう
     return
   end
