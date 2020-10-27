@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.7
+
+- `文字毎に個別オブジェクト` を有効にしている場合、半角スペースを含むテキストでエラーが起きていたのを修正(contributed by @neofuji)
+
 ## 0.6
 
 - キャッシュモードの挙動を変更(contributed by @neofuji)
