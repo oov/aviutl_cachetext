@@ -132,6 +132,11 @@ function P.load(key)
   local cimg = c.img[obj.index]
   if cimg == nil then
     -- 描画する必要がなさそう
+    if obj.getoption("multi_object") then
+      -- フォントサイズ 1 の Arial のピリオドが残ってしまうので消す
+      obj.setoption("drawtarget", "tempbuffer", 1, 1)
+      obj.load("tempbuffer")
+    end
     return
   end
   obj.setoption("drawtarget", "tempbuffer", cimg.w, cimg.h)
